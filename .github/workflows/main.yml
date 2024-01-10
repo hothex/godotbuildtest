@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - "v*"
+  pull_request:
+    branches: [ main ]
+
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions: write-all
+    name: Export Game
+    steps:
+      - uses: actions/checkout@v4.1.1
+      - name: exportGame
+        id: export
+        uses: firebelley/godot-export@v5.2.1
+        with:
+          # The download url of the Linux Headless Godot executable.
+          godot_executable_download_url: https://downloads.tuxfamily.org/godotengine/3.6/beta3/Godot_v3.6-beta3_linux_headless.64.zip
+          # The url of the export templates corresponding to the Godot executable version.
+          godot_export_templates_download_url: https://downloads.tuxfamily.org/godotengine/3.6/beta3/Godot_v3.6-beta3_export_templates.tpz
+          # The path relative to the root of the git repository that contains the "project.godot" file.
+          relative_project_path: ./
+          use_godot_3: true
+          archive_output: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: create release
+        uses: ncipollo/release-action@v1.12.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          generateReleaseNotes: true
+          tag: ${{ github.ref_name }}
+          artifacts: ${{ steps.export.outputs.archive_directory }}/*
+        
